@@ -136,7 +136,7 @@ class PartialFormSubmission extends SubmittedForm
         $partialFields = GridField::create(
             'PartialFields',
             _t(static::class . '.PARTIALFIELDS', 'Partial fields'),
-            $list->sort('Created', 'ASC')
+            $list->sort('ID')
         );
 
         $exportColumns = [

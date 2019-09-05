@@ -11,6 +11,7 @@ use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\Control\Middleware\HTTPCacheControlMiddleware;
+use SilverStripe\Dev\Debug;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\ORM\DataObject;
@@ -137,7 +138,10 @@ class PartialUserFormController extends UserDefinedFormController
                         'Uploaded: %s (Attach a new file to replace the uploaded file)',
                         $upload->UploadedFile()->Name
                     )
-                );
+                )
+                ->removeExtraClass('requiredField')
+                ->setAttribute('data-rule-required', 'false')
+                ->setAttribute('aria-required', 'false');
         }
     }
 

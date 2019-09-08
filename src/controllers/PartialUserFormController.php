@@ -11,7 +11,6 @@ use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\Control\Middleware\HTTPCacheControlMiddleware;
-use SilverStripe\Dev\Debug;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\ORM\DataObject;

@@ -65,7 +65,7 @@ class UserDefinedFormExtension extends DataExtension
             GridField::create(
                 'PartialSubmissions',
                 _t(__CLASS__ . '.PartialSubmission', 'Partial submissions'),
-                $this->owner->PartialSubmissions(),
+                $this->owner->PartialSubmissions()->sort('Created', 'DESC'),
                 $gridfieldConfig
             )
         );

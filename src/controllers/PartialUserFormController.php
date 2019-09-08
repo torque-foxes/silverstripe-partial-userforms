@@ -7,6 +7,7 @@ use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use Page;
 use SilverStripe\Control\HTTPRequest;
 use Firesphere\PartialUserforms\Forms\PasswordForm;
+use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\Control\Middleware\HTTPCacheControlMiddleware;
@@ -56,10 +57,12 @@ class PartialUserFormController extends UserDefinedFormController
         $controller = parent::create($record);
         $controller->doInit();
 
+        Director::set_current_page($controller->data());
+
         // Set the session after init and check if the last session has expired
         // or another submission has started
         $sessionID = $request->getSession()->get(PartialSubmissionController::SESSION_KEY);
-        if (!$sessionID || $sessionID !==  $partial->ID) {
+        if (!$sessionID || $sessionID !== $partial->ID) {
             $request->getSession()->set(PartialSubmissionController::SESSION_KEY, $partial->ID);
         }
 

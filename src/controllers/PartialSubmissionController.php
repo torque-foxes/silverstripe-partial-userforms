@@ -59,19 +59,27 @@ class PartialSubmissionController extends ContentController
 
         // We don't want SecurityID and/or the process Action stored as a thing
         unset($postVars['SecurityID'], $postVars['action_process']);
-        $submissionID = $request->getSession()->get(self::SESSION_KEY);
+
+        // Check for partial params so the submission doesn't rely on session for partial page
+        if (!empty($postVars['PartialID'])) {
+            $submissionID = $postVars['PartialID'];
+        } else {
+            $submissionID = $request->getSession()->get(self::SESSION_KEY);
+        }
 
         /** @var PartialFormSubmission $partialSubmission */
         $partialSubmission = PartialFormSubmission::get()->byID($submissionID);
 
         if (!$submissionID || !$partialSubmission) {
-            $partialSubmission = PartialFormSubmission::create();
-            // TODO: Set the Parent ID and Parent Class before write, this issue will create new submissions
-            // every time the session expires when the user proceeds to the next step.
-            // Also, saving a new submission without a parent creates an
-            // "AccordionItems" as parent class (first DataObject found)
-            $submissionID = $partialSubmission->write();
+            // A new session has already been created in {@link UserDefinedFormControllerExtension::onAfterInit()}
+            // so this shouldn't happen. Although, when there's a pending ajax save (e.g. user clicks next/prev too fast
+            // then hit submit), after submission, the submissionID has already been deleted while save is still in
+            // progress, thus resulting to 404
+            // TODO: Find a solution dealing with race condition between ajax save and form submit
+            $this->httpError(404);
         }
+
+        // Refresh session ID
         $request->getSession()->set(self::SESSION_KEY, $submissionID);
         foreach ($postVars as $field => $value) {
             /** @var EditableFormField $editableField */
@@ -166,29 +174,37 @@ class PartialSubmissionController extends ContentController
             $partialFileSubmission = PartialFileFieldSubmission::create($partialData);
             $partialFileSubmission->write();
         }
-        // Don't overwrite existing uploads
-        if (!$partialFileSubmission->UploadedFileID && is_array($formData['Value'])) {
-            $file = $this->uploadFile($formData, $editableField);
+
+        if (is_array($formData['Value'])) {
+            $file = $this->uploadFile($formData, $editableField, $partialFileSubmission);
             $partialFileSubmission->UploadedFileID = $file->ID ?? 0;
+            $partialFileSubmission->write();
         }
-        $partialFileSubmission->write();
     }
 
     /**
      * @param array $formData
      * @param EditableFormField\EditableFileField $field
+     * @param PartialFileFieldSubmission $partialFileSubmission
      * @return bool|File
-     * @throws \Exception
+     * @throws Exception
      */
-    protected function uploadFile($formData, $field)
+    protected function uploadFile($formData, $field, $partialFileSubmission)
     {
         if (!empty($formData['Value']['name'])) {
             $foldername = $field->getFormField()->getFolderName();
 
-            // create the file from post data
+            if (!$partialFileSubmission->UploadedFileID) {
+                $file = File::create([
+                    'ShowInSearch' => 0
+                ]);
+            } else {
+                // Allow overwrite existing uploads
+                $file = $partialFileSubmission->UploadedFile();
+            }
+
+            // Upload the file from post data
             $upload = Upload::create();
-            $file = File::create();
-            $file->ShowInSearch = 0;
             if ($upload->loadIntoFile($formData['Value'], $file, $foldername)) {
                 return $file;
             }

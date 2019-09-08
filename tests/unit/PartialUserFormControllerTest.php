@@ -2,7 +2,9 @@
 
 namespace Firesphere\PartialUserforms\Tests;
 
+use Firesphere\PartialUserforms\Forms\PasswordForm;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
+use SilverStripe\Assets\File;
 use SilverStripe\Dev\FunctionalTest;
 use SilverStripe\UserForms\Model\UserDefinedForm;
 
@@ -23,13 +25,8 @@ class PartialUserFormControllerTest extends FunctionalTest
         $this->assertEquals(404, $result->getStatusCode());
     }
 
-    /**
-     * @todo
-     */
     public function testPartialValidKeyToken()
     {
-        $this->markTestSkipped('Revisit and set up themes for testing');
-
         $token = 'q1w2e3r4t5y6u7i8';
         // No Parent
         $key = singleton(PartialFormSubmission::class)->generateKey($token);
@@ -67,9 +64,24 @@ class PartialUserFormControllerTest extends FunctionalTest
         $this->assertEquals(404, $result->getStatusCode());
     }
 
+    public function testDataPopulated()
+    {
+        $partial = $this->objFromFixture(PartialFormSubmission::class, 'submission1');
+        $key = $partial->generateKey($partial->Token);
+
+        $response = $this->get("/partial/{$key}/{$partial->Token}");
+        $this->assertEquals(200, $response->getStatusCode());
+
+        $this->assertCount(1, $partial->PartialUploads());
+        $this->assertCount(3, $partial->PartialFields());
+
+        $content = $response->getBody();
+        $this->assertContains('I have a question', $content);
+        $this->assertContains('Hans-fullsize-sqr.png', $content);
+    }
+
     public function testPasswordProtectedPartial()
     {
-        $token = 'q1w2e3r4t5y6u7i8';
         // Partial with UserDefinedForm
         $submission = $this->objFromFixture(PartialFormSubmission::class, 'submission1');
         /** @var UserDefinedForm $parent */
@@ -77,8 +89,9 @@ class PartialUserFormControllerTest extends FunctionalTest
         $parent->PasswordProtected = true;
         $parent->write();
         $parent->publishRecursive();
-        $key = $submission->generateKey($token);
-        $result = $this->get("partial/{$key}/{$token}");
+
+        $key = $submission->generateKey($submission->Token);
+        $result = $this->get("partial/{$key}/{$submission->Token}");
         // Be redirected to the Password form
         $formOpeningTag = '<form id="PasswordForm_getForm" action="/verify/getForm" method="post" enctype="application/x-www-form-urlencoded" class="userform">';
         $this->assertContains($formOpeningTag, $result->getBody());
@@ -88,5 +101,6 @@ class PartialUserFormControllerTest extends FunctionalTest
     {
         parent::setUp();
         $this->objFromFixture(UserDefinedForm::class, 'form1')->publishRecursive();
+        $this->objFromFixture(File::class, 'file1')->publishRecursive();
     }
 }

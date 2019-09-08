@@ -67,8 +67,12 @@ class PartialFormSubmission extends SubmittedForm
         'PartialUploads' => PartialFileFieldSubmission::class
     ];
 
+    /**
+     * @var array
+     */
     private static $cascade_deletes = [
-        'PartialFields'
+        'PartialFields',
+        'PartialUploads',
     ];
 
     /**
@@ -119,7 +123,8 @@ class PartialFormSubmission extends SubmittedForm
             'Token',
             'UserDefinedFormID',
             'Submitter',
-            'PartialUploads'
+            'PartialUploads',
+            'Password'
         ]);
 
         $partialFields = $this->PartialFields();
@@ -169,13 +174,11 @@ class PartialFormSubmission extends SubmittedForm
             return '(none)';
         }
 
-        $token = $this->Token;
-
         return Controller::join_links(
             Director::absoluteBaseURL(),
             'partial',
-            $this->generateKey($token),
-            $token
+            $this->generateKey($this->Token),
+            $this->Token
         );
     }
 
@@ -198,26 +201,15 @@ class PartialFormSubmission extends SubmittedForm
     public function onBeforeWrite()
     {
         parent::onBeforeWrite();
-        $this->getPartialToken();
-        if (!$this->Password) {
-            $this->Password = $this->generatePassword();
-        }
-    }
 
-    /**
-     * Get the unique token for the share link
-     *
-     * @return bool|string|null
-     * @throws Exception
-     */
-    protected function getPartialToken()
-    {
         if (!$this->TokenSalt) {
             $this->TokenSalt = $this->generateToken();
             $this->Token = $this->generateToken();
         }
 
-        return $this->Token;
+        if (!$this->Password) {
+            $this->Password = $this->generatePassword();
+        }
     }
 
     /**
@@ -276,7 +268,7 @@ class PartialFormSubmission extends SubmittedForm
      */
     public function canView($member = null)
     {
-        if ($this->UserDefinedForm()) {
+        if ($this->UserDefinedFormID) {
             return $this->UserDefinedForm()->canView($member);
         }
 
@@ -291,7 +283,7 @@ class PartialFormSubmission extends SubmittedForm
      */
     public function canEdit($member = null)
     {
-        if ($this->UserDefinedForm()) {
+        if ($this->UserDefinedFormID) {
             return $this->UserDefinedForm()->canEdit($member);
         }
 
@@ -305,10 +297,44 @@ class PartialFormSubmission extends SubmittedForm
      */
     public function canDelete($member = null)
     {
-        if ($this->UserDefinedForm()) {
+        if ($this->UserDefinedFormID) {
             return $this->UserDefinedForm()->canDelete($member);
         }
 
         return parent::canDelete($member);
+    }
+
+    /**
+     * Get all partial fields for loading data into the form
+     *
+     * @return array
+     */
+    public function getFields()
+    {
+        $formFields = $this->PartialFields()->map('Name', 'Value')->toArray();
+        $fileFields = $this->PartialUploads()->map('Name', 'FileName')->toArray();
+
+        return array_merge($formFields, $fileFields);
+    }
+
+    /**
+     * Validate key/token combination
+     *
+     * @param string $key
+     * @param string $token
+     * @return bool|PartialFormSubmission
+     */
+    public static function validateKeyToken($key, $token)
+    {
+        /** @var PartialFormSubmission $partial */
+        $partial = PartialFormSubmission::get()->find('Token', $token);
+        if (!$partial ||
+            !$partial->UserDefinedFormID ||
+            !hash_equals($partial->generateKey($token), $key)
+        ) {
+            return false;
+        }
+
+        return $partial;
     }
 }

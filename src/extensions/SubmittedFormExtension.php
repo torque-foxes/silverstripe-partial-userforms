@@ -3,6 +3,8 @@
 namespace Firesphere\PartialUserforms\Extensions;
 
 use Firesphere\PartialUserforms\Controllers\PartialSubmissionController;
+use Firesphere\PartialUserforms\Controllers\PartialUserFormVerifyController;
+use Firesphere\PartialUserforms\Forms\PasswordForm;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use SilverStripe\Control\Controller;
 use SilverStripe\ORM\DataExtension;
@@ -22,7 +24,10 @@ class SubmittedFormExtension extends DataExtension
     public function updateAfterProcess()
     {
         // cleanup partial submissions
-        $partialID = Controller::curr()->getRequest()->getSession()->get(PartialSubmissionController::SESSION_KEY);
+        $request = Controller::curr()->getRequest();
+
+        $postID = $request->postVar('PartialID');
+        $partialID = $postID ?? $request->getSession()->get(PartialSubmissionController::SESSION_KEY);
         if ($partialID === null) {
             return;
         }
@@ -33,8 +38,21 @@ class SubmittedFormExtension extends DataExtension
             return;
         }
 
+        // Link files to SubmittedForm
+        $uploads = $partialForm->PartialUploads()->filter([
+            'UploadedFileID:not'=> 0
+        ]);
+        if ($uploads->exists()) {
+            foreach ($uploads as $upload) {
+                $upload->ParentID = $this->owner->ID;
+                $upload->write();
+            }
+        }
+
         $partialForm->delete();
         $partialForm->destroy();
-        Controller::curr()->getRequest()->getSession()->clear(PartialSubmissionController::SESSION_KEY);
+        $request->getSession()->clear(PartialSubmissionController::SESSION_KEY);
+        $request->getSession()->clear(PasswordForm::PASSWORD_SESSION_KEY);
+        $request->getSession()->clear(PartialUserFormVerifyController::PASSWORD_KEY);
     }
 }

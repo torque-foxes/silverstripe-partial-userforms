@@ -4,6 +4,7 @@ namespace Firesphere\PartialUserforms\Tests;
 
 use Firesphere\PartialUserforms\Models\PartialFileFieldSubmission;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
+use SilverStripe\Assets\File;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Security\DefaultAdminService;
 use SilverStripe\Security\Security;
@@ -64,11 +65,17 @@ class PartialFileFieldSubmissionTest extends SapphireTest
     protected function setUp()
     {
         parent::setUp();
-        $this->field = PartialFileFieldSubmission::create();
-        $partialForm = PartialFormSubmission::create();
-        $udf = UserDefinedForm::create(['Title' => 'Test'])->write();
-        $partialForm->UserDefinedFormID = $udf;
-        $partialFormID = $partialForm->write();
-        $this->field->SubmittedFormID = $partialFormID;
+        $udf = UserDefinedForm::create(['Title' => 'Test']);
+        $udf->write();
+        $udf->publishRecursive();
+
+        $partialFormID = PartialFormSubmission::create([
+            'UserDefinedFormID'     => $udf->ID,
+            'UserDefinedFormClass'  => $udf->ClassName,
+        ])->write();
+
+        $this->field = PartialFileFieldSubmission::create([
+            'SubmittedFormID' => $partialFormID,
+        ]);
     }
 }

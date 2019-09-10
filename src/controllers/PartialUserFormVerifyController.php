@@ -3,14 +3,16 @@
 
 namespace Firesphere\PartialUserforms\Controllers;
 
-use Exception;
-use Firesphere\PartialUserforms\Forms\PasswordForm;
-use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use Page;
+use Exception;
 use PageController;
+use SilverStripe\Control\Director;
+use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\UserForms\Model\UserDefinedForm;
+use Firesphere\PartialUserforms\Forms\PasswordForm;
+use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 
 /**
  * Class \Firesphere\PartialUserforms\Controllers\PartialUserFormVerifyController
@@ -54,9 +56,6 @@ class PartialUserFormVerifyController extends PageController
         $partial = PartialFormSubmission::get()->byID($sessionID);
 
         $this->setPartialFormSubmission($partial);
-        // Set data record and load the form
-        /** @var UserDefinedForm dataRecord */
-        $this->dataRecord = Page::create();
     }
 
     /**
@@ -66,7 +65,6 @@ class PartialUserFormVerifyController extends PageController
     {
         return PasswordForm::create($this, __FUNCTION__);
     }
-
 
     /**
      * @param array $data
@@ -97,7 +95,7 @@ class PartialUserFormVerifyController extends PageController
         $request->getSession()->set(PasswordForm::PASSWORD_SESSION_KEY, $partial->ID);
         $request->getSession()->set(self::PASSWORD_KEY, $data['Password']);
 
-        return $this->redirect($partial->getPartialLink());
+        return $this->redirect($partial->Parent()->Link('overview'));
     }
 
     /**

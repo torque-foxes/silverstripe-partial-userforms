@@ -92,7 +92,7 @@ class PartialUserFormControllerTest extends FunctionalTest
         $key = $submission->generateKey($submission->Token);
         $result = $this->get("partial/{$key}/{$submission->Token}");
         // Be redirected to the Password form
-        $formOpeningTag = '<form id="PasswordForm_getForm" action="/verify/getForm" method="post" enctype="application/x-www-form-urlencoded" class="userform">';
+        $formOpeningTag = '<form id="PasswordForm_getForm" action="/form-1/VerifyForm" method="post" enctype="application/x-www-form-urlencoded" class="userform">';
         $this->assertContains($formOpeningTag, $result->getBody());
     }
 

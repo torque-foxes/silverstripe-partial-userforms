@@ -72,7 +72,7 @@ class PartialUserFormController extends UserDefinedFormController
         if ($controller->PasswordProtected &&
             $request->getSession()->get(PasswordForm::PASSWORD_SESSION_KEY) !== $partial->ID
         ) {
-            return $this->redirect('verify');
+            return $this->redirect($record->link('verify'));
         }
 
         // Lock form

@@ -2,16 +2,17 @@
 
 namespace Firesphere\PartialUserforms\Extensions;
 
-use Firesphere\PartialUserforms\Models\PartialFormSubmission;
-use SilverStripe\Forms\CheckboxField;
-use SilverStripe\Forms\FieldList;
-use SilverStripe\Forms\GridField\GridField;
-use SilverStripe\Forms\GridField\GridFieldAddNewButton;
-use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
 use SilverStripe\Forms\Tab;
-use SilverStripe\ORM\DataExtension;
 use SilverStripe\ORM\DataList;
+use SilverStripe\Forms\FieldList;
+use SilverStripe\ORM\DataExtension;
+use SilverStripe\Forms\CheckboxField;
+use SilverStripe\Forms\TextareaField;
+use SilverStripe\Forms\GridField\GridField;
 use SilverStripe\UserForms\Model\UserDefinedForm;
+use SilverStripe\Forms\GridField\GridFieldAddNewButton;
+use Firesphere\PartialUserforms\Models\PartialFormSubmission;
+use SilverStripe\Forms\GridField\GridFieldConfig_RecordEditor;
 
 /**
  * Class UserDefinedFormExtension
@@ -28,8 +29,11 @@ class UserDefinedFormExtension extends DataExtension
      * @var array
      */
     private static $db = [
-        'ExportPartialSubmissions' => 'Boolean(true)',
-        'PasswordProtected'        => 'Boolean(false)'
+        'EnablePartialSubmissions' => 'Boolean(false)',
+        'ExportPartialSubmissions' => 'Boolean(false)',
+        'PasswordProtected'        => 'Boolean(false)',
+        'FormIntroduction'         => 'Text',
+        'FormOverview'             => 'Text',
     ];
 
     /**
@@ -70,30 +74,47 @@ class UserDefinedFormExtension extends DataExtension
             )
         );
 
-        $fields->insertBefore(
-            'DisableSaveSubmissions',
-            $pwdCheckbox = CheckboxField::create(
-                'PasswordProtected',
-                _t(__CLASS__ . 'PasswordProtected', 'Password protect resuming partial submissions')
-            )
-        );
-        $pwdDescription = _t(
+        $enablePartialCheckbox = CheckboxField::create(
+            'EnablePartialSubmissions',
+            _t(__CLASS__ . '.enablePartialSubmissionsCheckboxLabel', 'Enable partial submissions')
+        )->setDescription(_t(
+            __CLASS__ . '.enablePartialSubmissionsDescription',
+            'If checked, this will allow this form to be shareable and filled out by multiple people'
+        ));
+
+        $pwdCheckbox = CheckboxField::create(
+            'PasswordProtected',
+            _t(__CLASS__ . 'PasswordProtected', 'Password protect resuming partial submissions')
+        )->setDescription(_t(
             __CLASS__ . '.PasswordProtectDescription',
             'When resuming a partial submission, require the user to enter a password'
-        );
-        $pwdCheckbox->setDescription($pwdDescription);
+        ));
 
-        $fields->insertAfter(
-            'DisableSaveSubmissions',
-            $partialCheckbox = CheckboxField::create(
-                'ExportPartialSubmissions',
-                _t(__CLASS__ . '.partialCheckboxLabel', 'Send partial submissions')
-            )
-        );
-        $description = _t(
+        $partialCheckbox = CheckboxField::create(
+            'ExportPartialSubmissions',
+            _t(__CLASS__ . '.partialCheckboxLabel', 'Send partial submissions')
+        )->setDescription(_t(
             __CLASS__ . '.partialCheckboxDescription',
             'The configuration and global export configuration can be set in the site Settings'
+        ));
+
+        $introTextDescription = _t(__CLASS__ . '.introTextDescription', 'Text to display at the introduction page, before the user has started the form.');
+        $overviewTextDescription = _t(__CLASS__ . '.overviewTextDescription', 'Text to display on the overview page of the form, alongside form credentials.');
+
+        $fields->addFieldToTab(
+            'Root.FormOptions',
+            Tab::create('Partial', _t(__CLASS__ . '.partialTab', 'Partial'))
         );
-        $partialCheckbox->setDescription($description);
+        $fields->addFieldsToTab('Root.FormOptions.Partial', [
+            $enablePartialCheckbox,
+            $pwdCheckbox,
+            $partialCheckbox,
+            TextareaField::create('FormIntroduction', 'Form introduction text')
+                ->setDescription($introTextDescription)
+                ->setRows(3),
+            TextareaField::create('FormOverview', 'Form overview text')
+                ->setDescription($overviewTextDescription)
+                ->setRows(3),
+        ]);
     }
 }

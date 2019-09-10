@@ -79,7 +79,7 @@ class PartialUserFormController extends UserDefinedFormController
         if ($this->isLockedOut()) {
             // TODO: MMS-115
             Debug::dump('This form is currently being used by someone else. Please try again in 30 minutes.');
-            // Redirect to overview page $this->redirect($this->Link('overview'));
+            // Redirect to overview page
         }
 
         $form = $controller->Form();
@@ -138,20 +138,6 @@ class PartialUserFormController extends UserDefinedFormController
         }
 
         return $partial;
-    }
-
-    /**
-     * Get the partial link
-     * @param string $action
-     * @return string
-     */
-    public function Link($action = null)
-    {
-        return Controller::join_links(
-            Director::absoluteBaseURL(),
-            'partial',
-            $action
-        );
     }
 
     /**

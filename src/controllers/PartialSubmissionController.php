@@ -12,7 +12,9 @@ use SilverStripe\CMS\Controllers\ContentController;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
+use SilverStripe\Control\Session;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\ORM\FieldType\DBDatetime;
 use SilverStripe\ORM\ValidationException;
 use SilverStripe\UserForms\Model\EditableFormField;
 
@@ -80,7 +82,8 @@ class PartialSubmissionController extends ContentController
         }
 
         // Refresh session ID
-        $request->getSession()->set(self::SESSION_KEY, $submissionID);
+        static::reloadSession($request->getSession(), $submissionID);
+
         foreach ($postVars as $field => $value) {
             /** @var EditableFormField $editableField */
             $editableField = $this->createOrUpdateSubmission([
@@ -104,6 +107,34 @@ class PartialSubmissionController extends ContentController
         $return = $partialSubmission->exists();
 
         return new HTTPResponse($return, ($return ? 201 : 400));
+    }
+
+    /**
+     * Reload session for partial submissions
+     * @param Session $session
+     * @param int $sessionID Partial form submission ID
+     * @throws ValidationException
+     */
+    public static function reloadSession($session, $sessionID)
+    {
+        $partial = PartialFormSubmission::get()->byID($sessionID);
+        if (!$partial) {
+            return;
+        }
+
+        $session->set(self::SESSION_KEY, $partial->ID);
+
+        $now = new \DateTime(DBDatetime::now()->getValue());
+        $now->add(new \DateInterval('PT30M'));
+
+        $phpSessionID = session_id();
+        if (!$phpSessionID) {
+            return;
+        }
+
+        $partial->LockedOutUntil = $now->format('Y-m-d H:i:s');
+        $partial->PHPSessionID = $phpSessionID;
+        $partial->write();
     }
 
     /**

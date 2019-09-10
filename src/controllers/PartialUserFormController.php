@@ -5,12 +5,14 @@ namespace Firesphere\PartialUserforms\Controllers;
 use Exception;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use Page;
+use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use Firesphere\PartialUserforms\Forms\PasswordForm;
 use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\Control\Middleware\HTTPCacheControlMiddleware;
+use SilverStripe\Dev\Debug;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\HiddenField;
 use SilverStripe\ORM\DataObject;
@@ -63,13 +65,21 @@ class PartialUserFormController extends UserDefinedFormController
         // or another submission has started
         $sessionID = $request->getSession()->get(PartialSubmissionController::SESSION_KEY);
         if (!$sessionID || $sessionID !== $partial->ID) {
-            $request->getSession()->set(PartialSubmissionController::SESSION_KEY, $partial->ID);
+            PartialSubmissionController::reloadSession($request->getSession(), $partial->ID);
         }
 
+        // Verify user
         if ($controller->PasswordProtected &&
             $request->getSession()->get(PasswordForm::PASSWORD_SESSION_KEY) !== $partial->ID
         ) {
             return $this->redirect('verify');
+        }
+
+        // Lock form
+        if ($this->isLockedOut()) {
+            // TODO: MMS-115
+            Debug::dump('This form is currently being used by someone else. Please try again in 30 minutes.');
+            // Redirect to overview page $this->redirect($this->Link('overview'));
         }
 
         $form = $controller->Form();
@@ -101,6 +111,47 @@ class PartialUserFormController extends UserDefinedFormController
             'Form'        => $form,
             'PartialLink' => $partial->getPartialLink()
         ])->renderWith([static::class, Page::class]);
+    }
+
+    /**
+     * A little abstraction to be more readable
+     *
+     * @param HTTPRequest $request
+     * @return PartialFormSubmission|void
+     * @throws HTTPResponse_Exception
+     */
+    public function validateToken($request)
+    {
+        // Ensure this URL doesn't get picked up by HTTP caches
+        HTTPCacheControlMiddleware::singleton()->disableCache();
+
+        $key = $request->param('Key');
+        $token = $request->param('Token');
+        if (!$key || !$token) {
+            return $this->httpError(404);
+        }
+
+        /** @var PartialFormSubmission $partial */
+        $partial = PartialFormSubmission::validateKeyToken($key, $token);
+        if ($partial === false) {
+            return $this->httpError(404);
+        }
+
+        return $partial;
+    }
+
+    /**
+     * Get the partial link
+     * @param string $action
+     * @return string
+     */
+    public function Link($action = null)
+    {
+        return Controller::join_links(
+            Director::absoluteBaseURL(),
+            'partial',
+            $action
+        );
     }
 
     /**
@@ -142,29 +193,30 @@ class PartialUserFormController extends UserDefinedFormController
     }
 
     /**
-     * A little abstraction to be more readable
-     *
-     * @param HTTPRequest $request
-     * @return PartialFormSubmission|void
-     * @throws HTTPResponse_Exception
+     * Checks whether this form is currently being used by someone else
+     * @return bool
+     * @throws \SilverStripe\ORM\ValidationException
      */
-    public function validateToken($request)
+    protected function isLockedOut()
     {
-        // Ensure this URL doesn't get picked up by HTTP caches
-        HTTPCacheControlMiddleware::singleton()->disableCache();
+        $session = $this->getRequest()->getSession();
+        $submissionID = $session->get(PartialSubmissionController::SESSION_KEY);
+        $partial = PartialFormSubmission::get()->byID($submissionID);
+        $phpSessionID = session_id();
 
-        $key = $request->param('Key');
-        $token = $request->param('Token');
-        if (!$key || !$token) {
-            return $this->httpError(404);
+        // If invalid sessions or if the last session was from the same user or that the recent session has expired
+        if (
+            !$submissionID ||
+            !$partial ||
+            !$partial->PHPSessionID ||
+            $phpSessionID === $partial->PHPSessionID ||
+            $partial->dbObject('LockedOutUntil')->InPast()
+        ) {
+            PartialSubmissionController::reloadSession($session, $partial->ID);
+            return false;
         }
 
-        /** @var PartialFormSubmission $partial */
-        $partial = PartialFormSubmission::validateKeyToken($key, $token);
-        if ($partial === false) {
-            return $this->httpError(404);
-        }
-
-        return $partial;
+        // Lockout when there's an ongoing session
+        return $phpSessionID !== $partial->PHPSessionID && $partial->dbObject('LockedOutUntil')->InFuture();
     }
 }

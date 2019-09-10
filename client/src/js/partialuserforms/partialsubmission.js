@@ -75,10 +75,6 @@ const abortPendingSubmissions = () => {
   if (form !== null) {
     form._submit = form.submit; // Save reference
     form.submit = () => {
-      if (!confirm("Are you sure you want to submit this form?")) {
-        return;
-      }
-
       // Abort all requests
       if (requests.length) {
         requests.forEach(xhr => {

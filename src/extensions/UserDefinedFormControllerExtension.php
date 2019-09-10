@@ -54,33 +54,6 @@ class UserDefinedFormControllerExtension extends Extension
     }
 
     /**
-     * Start a clean session if the user visits the original form
-     */
-    public function onAfterInit()
-    {
-        $request = $this->owner->getRequest();
-        if ($request instanceof NullHTTPRequest) {
-            return;
-        }
-
-        $params = $this->owner->getRequest()->params();
-        // Pages without action e.g. /partial
-        if (!array_key_exists('Action', $params)) {
-            return;
-        }
-
-        // This should only run on index
-        if ($params['Action'] === null || $params['Action'] === 'index') {
-            $session = $this->owner->getRequest()->getSession();
-            if (!$session) {
-                return;
-            }
-
-            $this->createPartialSubmission();
-        }
-    }
-
-    /**
      * Creates a new partial submission and partial fields.
      *
      * @throws \SilverStripe\ORM\ValidationException

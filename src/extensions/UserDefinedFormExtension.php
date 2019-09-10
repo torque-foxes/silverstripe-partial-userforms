@@ -30,7 +30,7 @@ class UserDefinedFormExtension extends DataExtension
      */
     private static $db = [
         'EnablePartialSubmissions' => 'Boolean(false)',
-        'ExportPartialSubmissions' => 'Boolean(false)',
+        'ExportPartialSubmissions' => 'Boolean(true)',
         'PasswordProtected'        => 'Boolean(false)',
         'FormIntroduction'         => 'Text',
         'FormOverview'             => 'Text',

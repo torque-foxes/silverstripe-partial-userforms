@@ -2,7 +2,6 @@
 
 namespace Firesphere\PartialUserforms\Tests;
 
-use Firesphere\PartialUserforms\Forms\PasswordForm;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use SilverStripe\Assets\File;
 use SilverStripe\Dev\FunctionalTest;
@@ -95,6 +94,13 @@ class PartialUserFormControllerTest extends FunctionalTest
         // Be redirected to the Password form
         $formOpeningTag = '<form id="PasswordForm_getForm" action="/verify/getForm" method="post" enctype="application/x-www-form-urlencoded" class="userform">';
         $this->assertContains($formOpeningTag, $result->getBody());
+    }
+
+    /**
+     * TODO: Add test when MMS-115 is complete
+     */
+    public function testIsLockedOut()
+    {
     }
 
     public function setUp()

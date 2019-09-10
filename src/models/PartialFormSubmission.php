@@ -46,10 +46,12 @@ class PartialFormSubmission extends SubmittedForm
      * @var array
      */
     private static $db = [
-        'IsSend'    => 'Boolean(false)',
-        'TokenSalt' => 'Varchar(16)',
-        'Token'     => 'Varchar(16)',
-        'Password'  => 'Varchar(64)',
+        'IsSend'            => 'Boolean(false)',
+        'TokenSalt'         => 'Varchar(16)',
+        'Token'             => 'Varchar(16)',
+        'Password'          => 'Varchar(64)',
+        'LockedOutUntil'    => 'Datetime',
+        'PHPSessionID'      => 'Varchar(128)'
     ];
 
     /**
@@ -124,7 +126,9 @@ class PartialFormSubmission extends SubmittedForm
             'UserDefinedFormID',
             'Submitter',
             'PartialUploads',
-            'Password'
+            'Password',
+            'LockedOutUntil',
+            'PHPSessionID'
         ]);
 
         $partialFields = $this->PartialFields();

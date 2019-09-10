@@ -96,6 +96,6 @@ class UserDefinedFormControllerExtension extends Extension
         }
 
         // Refresh session on start
-        $page->getRequest()->getSession()->set(PartialSubmissionController::SESSION_KEY, $submissionID);
+        PartialSubmissionController::reloadSession($page->getRequest()->getSession(), $submissionID);
     }
 }

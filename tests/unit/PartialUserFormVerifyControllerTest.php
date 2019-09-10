@@ -9,7 +9,6 @@ use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use SilverStripe\Control\NullHTTPRequest;
 use SilverStripe\Control\Session;
 use SilverStripe\Dev\FunctionalTest;
-use SilverStripe\Dev\SapphireTest;
 
 class PartialUserFormVerifyControllerTest extends FunctionalTest
 {

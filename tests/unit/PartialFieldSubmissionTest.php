@@ -6,7 +6,6 @@ use Firesphere\PartialUserforms\Models\PartialFieldSubmission;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use SilverStripe\Dev\SapphireTest;
 use SilverStripe\Security\DefaultAdminService;
-use SilverStripe\Security\Member;
 use SilverStripe\Security\Security;
 use SilverStripe\UserForms\Model\UserDefinedForm;
 

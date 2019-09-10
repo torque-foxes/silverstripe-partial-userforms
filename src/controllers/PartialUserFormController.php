@@ -137,7 +137,10 @@ class PartialUserFormController extends UserDefinedFormController
                         'Uploaded: %s (Attach a new file to replace the uploaded file)',
                         $upload->UploadedFile()->Name
                     )
-                );
+                )
+                ->removeExtraClass('requiredField')
+                ->setAttribute('data-rule-required', 'false')
+                ->setAttribute('aria-required', 'false');
         }
     }
 

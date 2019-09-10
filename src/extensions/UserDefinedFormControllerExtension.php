@@ -83,7 +83,7 @@ class UserDefinedFormControllerExtension extends Extension
             $newData = [
                 'SubmittedFormID'   => $submissionID,
                 'Name'              => $field->Name,
-                'Title'             => $field->getField('Title'),
+                'Title'             => $field->Title ?? $field->Name,
             ];
 
             if (in_array(EditableFileField::class, $field->getClassAncestry())) {

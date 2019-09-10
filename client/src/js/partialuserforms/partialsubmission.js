@@ -1,8 +1,9 @@
 const baseDomain = document.baseURI;
 const submitURL = 'partialuserform/save';
-const buttons = () => Array.from(document.body.querySelectorAll('form.userform ul li.step-button-wrapper button'));
-const formElements = () => Array.from(document.body.querySelectorAll('form.userform [name]:not([type=hidden]):not([type=submit])'));
 const form = document.body.querySelector('form.userform');
+const buttons = () => Array.from(form.querySelectorAll('ul li.step-button-wrapper button'));
+// Just get the form elements from the current step
+const formElements = () => Array.from(form.querySelectorAll('[aria-hidden=false] [name]:not([type=hidden]):not([type=submit])'));
 const requests = [];
 
 const getElementValue = (element, fieldName) => {
@@ -53,7 +54,7 @@ const submitPartial = () => {
   });
 
   // Pass partial params if available
-  const partialID = document.body.querySelector('form.userform [name=PartialID]');
+  const partialID = form.querySelector('[name=PartialID]');
   if (partialID) {
     data.append('PartialID', partialID.value);
   }

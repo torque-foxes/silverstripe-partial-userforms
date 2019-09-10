@@ -234,6 +234,9 @@ class PartialSubmissionControllerTest extends FunctionalTest
 
         $this->assertEquals('2019-02-15 10:30:00', $partial->LockedOutUntil);
         $this->assertEquals('petrichor', $partial->PHPSessionID);
+
+        // Set the session back to empty string to prevent destroying uninitialized session
+        session_id('');
     }
 
     /**

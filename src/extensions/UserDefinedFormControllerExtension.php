@@ -113,8 +113,12 @@ class UserDefinedFormControllerExtension extends Extension
     /**
      * Verify route, for password entry
      */
-    public function verify()
+    public function verify(HTTPRequest $request = null)
     {
+        if (!$this->owner->EnablePartialSubmissions) {
+            return $this->owner->redirect($this->owner->Link());
+        }
+
         return $this->owner->customise([
             'Form' => $this->VerifyForm(),
         ])->renderWith([UserDefinedFormController::class . '_start', Page::class]);
@@ -139,6 +143,10 @@ class UserDefinedFormControllerExtension extends Extension
      */
     public function start(HTTPRequest $request = null)
     {
+        if (!$this->owner->EnablePartialSubmissions) {
+            return $this->owner->redirect($this->owner->Link());
+        }
+
         return $this->owner->customise([
             'Form' => $this->StartForm(),
         ]);
@@ -186,6 +194,10 @@ class UserDefinedFormControllerExtension extends Extension
      */
     public function overview(HTTPRequest $request = null)
     {
+        if (!$this->owner->EnablePartialSubmissions) {
+            return $this->owner->redirect($this->owner->Link());
+        }
+
         $formLocked = PartialUserFormController::isLockedOut();
         $form = $this->OverviewForm($request);
         if ($formLocked) {

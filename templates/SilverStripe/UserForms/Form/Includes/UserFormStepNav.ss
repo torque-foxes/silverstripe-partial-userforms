@@ -16,9 +16,9 @@
                 </button>
             </li>
             <li class="step-button-wrapper">
-                <button class="step-button-share" type="button">
+                <a href="{$Controller.Link}overview" class="step-button-share">
                     <%t Firesphere\\PartialUserforms\\Form.STEP_SHARE "Share form" %>
-                </button>
+                </a>
             </li>
         <% end_if %>
         <li class="step-button-wrapper" aria-hidden="true" style="display:none;">

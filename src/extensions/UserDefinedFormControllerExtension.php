@@ -37,7 +37,6 @@ class UserDefinedFormControllerExtension extends Extension
         'OverviewForm',
         'verify',
         'VerifyForm',
-        'share',
     ];
 
     private static $url_handlers = [
@@ -191,6 +190,9 @@ class UserDefinedFormControllerExtension extends Extension
         $form = $this->OverviewForm($request);
         if ($formLocked) {
             $form->unsetAllActions();
+        } else {
+            // Clear session if it's not locked (e.g. session belongs to the user)
+            PartialSubmissionController::clearLockSession();
         }
 
         return $this->owner->customise([
@@ -198,18 +200,6 @@ class UserDefinedFormControllerExtension extends Extension
             'FormLocked' => $formLocked,
             'PartialForm' => $this->getPartialFormSubmission(),
         ]);
-    }
-
-    /**
-     * Clear the lock session to allow other users to fill out the form after sharing and render overview page.
-     */
-    public function share(HTTPRequest $request = null)
-    {
-        PartialSubmissionController::clearLockSession();
-
-        return $this->owner->customise([
-            'Form' => $this->OverviewForm($request)
-        ])->renderWith([UserDefinedFormController::class . '_overview', Page::class]);
     }
 
     /**

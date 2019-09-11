@@ -57,6 +57,9 @@ class PartialUserFormController extends UserDefinedFormController
         // Check if form is locked
         if (static::isLockedOut()) {
             $this->redirect($page->link('overview'));
+        } else {
+            // Claim the form session
+            PartialSubmissionController::reloadSession($request->getSession(), $partial->ID);
         }
 
         /** @var self $controller */
@@ -143,7 +146,6 @@ class PartialUserFormController extends UserDefinedFormController
     /**
      * Checks whether this form is currently being used by someone else
      * @return bool
-     * @throws \SilverStripe\ORM\ValidationException
      */
     public static function isLockedOut()
     {
@@ -160,7 +162,6 @@ class PartialUserFormController extends UserDefinedFormController
             $phpSessionID === $partial->PHPSessionID ||
             $partial->dbObject('LockedOutUntil')->InPast()
         ) {
-            PartialSubmissionController::reloadSession($session, $partial->ID);
             return false;
         }
 

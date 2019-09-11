@@ -84,6 +84,9 @@ class PartialSubmissionController extends ContentController
             $this->httpError(409,
                 'Your session has timed out and this form is currently being used by someone else. Please try again later.'
             );
+        } else {
+            // Claim the form session
+            PartialSubmissionController::reloadSession($request->getSession(), $submissionID);
         }
 
         foreach ($postVars as $field => $value) {

@@ -5,14 +5,12 @@ namespace Firesphere\PartialUserforms\Extensions;
 use Page;
 use SilverStripe\Forms\Form;
 use SilverStripe\Core\Extension;
-use SilverStripe\Control\Session;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\FormAction;
 use SilverStripe\View\Requirements;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
-use SilverStripe\Control\NullHTTPRequest;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use SilverStripe\UserForms\Control\UserDefinedFormController;
 use Firesphere\PartialUserforms\Models\PartialFieldSubmission;
@@ -22,6 +20,7 @@ use SilverStripe\UserForms\Model\EditableFormField\EditableFileField;
 use Firesphere\PartialUserforms\Controllers\PartialSubmissionController;
 use Firesphere\PartialUserforms\Controllers\PartialUserFormVerifyController;
 use Firesphere\PartialUserforms\Forms\PasswordForm;
+use Firesphere\PartialUserforms\Controllers\PartialUserFormController;
 
 /**
  * Class UserDefinedFormControllerExtension
@@ -196,8 +195,15 @@ class UserDefinedFormControllerExtension extends Extension
      */
     public function overview(HTTPRequest $request = null)
     {
+        $formLocked = PartialUserFormController::isLockedOut();
+        $form = $this->OverviewForm($request);
+        if ($formLocked) {
+            $form->unsetAllActions();
+        }
+
         return $this->owner->customise([
-            'Form' => $this->OverviewForm($request),
+            'Form' => $form,
+            'FormLocked' => $formLocked
         ]);
     }
 
@@ -218,10 +224,15 @@ class UserDefinedFormControllerExtension extends Extension
 
         $fields = FieldList::create(
             TextField::create('FormLink', 'FormLink', $submission->getPartialLink())
-                ->setReadonly(true),
-            TextField::create('Password', 'Password', $password)
                 ->setReadonly(true)
         );
+
+        if ($this->owner->PasswordProtected) {
+            $fields->push(
+                TextField::create('Password', 'Password', $password)
+                    ->setReadonly(true)
+            );
+        }
 
         $actions = FieldList::create(
             FormAction::create('goToForm')->setTitle('Go to form')

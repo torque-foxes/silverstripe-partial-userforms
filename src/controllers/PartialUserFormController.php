@@ -12,10 +12,8 @@ use SilverStripe\Control\Director;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
 use SilverStripe\Control\Middleware\HTTPCacheControlMiddleware;
-use SilverStripe\Dev\Debug;
 use SilverStripe\Forms\Form;
 use SilverStripe\Forms\HiddenField;
-use SilverStripe\ORM\DataObject;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\UserForms\Control\UserDefinedFormController;
@@ -53,33 +51,24 @@ class PartialUserFormController extends UserDefinedFormController
     {
         /** @var PartialFormSubmission $partial */
         $partial = $this->validateToken($request);
-        $record = DataObject::get_by_id($partial->UserDefinedFormClass, $partial->UserDefinedFormID);
+        $page = $partial->UserDefinedForm();
+
+        // Check if form is locked
+        if (static::isLockedOut()) {
+            $this->redirect($page->link('overview'));
+        }
 
         /** @var self $controller */
-        $controller = parent::create($record);
+        $controller = parent::create($page);
         $controller->doInit();
 
         Director::set_current_page($controller->data());
-
-        // Set the session after init and check if the last session has expired
-        // or another submission has started
-        $sessionID = $request->getSession()->get(PartialSubmissionController::SESSION_KEY);
-        if (!$sessionID || $sessionID !== $partial->ID) {
-            PartialSubmissionController::reloadSession($request->getSession(), $partial->ID);
-        }
 
         // Verify user
         if ($controller->PasswordProtected &&
             $request->getSession()->get(PasswordForm::PASSWORD_SESSION_KEY) !== $partial->ID
         ) {
-            return $this->redirect($record->link('verify'));
-        }
-
-        // Lock form
-        if ($this->isLockedOut()) {
-            // TODO: MMS-115
-            Debug::dump('This form is currently being used by someone else. Please try again in 30 minutes.');
-            // Redirect to overview page
+            return $this->redirect($page->link('verify'));
         }
 
         $form = $controller->Form();
@@ -137,7 +126,42 @@ class PartialUserFormController extends UserDefinedFormController
             return $this->httpError(404);
         }
 
+        // Reload session by checking if the last session has expired
+        // or another submission has started
+        $sessionID = $request->getSession()->get(PartialSubmissionController::SESSION_KEY);
+        if (!$sessionID || $sessionID !== $partial->ID) {
+            PartialSubmissionController::reloadSession($request->getSession(), $partial->ID);
+        }
+
         return $partial;
+    }
+
+    /**
+     * Checks whether this form is currently being used by someone else
+     * @return bool
+     * @throws \SilverStripe\ORM\ValidationException
+     */
+    public static function isLockedOut()
+    {
+        $session = Controller::curr()->getRequest()->getSession();
+        $submissionID = $session->get(PartialSubmissionController::SESSION_KEY);
+        $partial = PartialFormSubmission::get()->byID($submissionID);
+        $phpSessionID = session_id();
+
+        // If invalid sessions or if the last session was from the same user or that the recent session has expired
+        if (
+            !$submissionID ||
+            !$partial ||
+            !$partial->PHPSessionID ||
+            $phpSessionID === $partial->PHPSessionID ||
+            $partial->dbObject('LockedOutUntil')->InPast()
+        ) {
+            PartialSubmissionController::reloadSession($session, $partial->ID);
+            return false;
+        }
+
+        // Lockout when there's an ongoing session
+        return $phpSessionID !== $partial->PHPSessionID && $partial->dbObject('LockedOutUntil')->InFuture();
     }
 
     /**
@@ -179,33 +203,5 @@ class PartialUserFormController extends UserDefinedFormController
                 ->setAttribute('data-rule-required', 'false')
                 ->setAttribute('aria-required', 'false');
         }
-    }
-
-    /**
-     * Checks whether this form is currently being used by someone else
-     * @return bool
-     * @throws \SilverStripe\ORM\ValidationException
-     */
-    protected function isLockedOut()
-    {
-        $session = $this->getRequest()->getSession();
-        $submissionID = $session->get(PartialSubmissionController::SESSION_KEY);
-        $partial = PartialFormSubmission::get()->byID($submissionID);
-        $phpSessionID = session_id();
-
-        // If invalid sessions or if the last session was from the same user or that the recent session has expired
-        if (
-            !$submissionID ||
-            !$partial ||
-            !$partial->PHPSessionID ||
-            $phpSessionID === $partial->PHPSessionID ||
-            $partial->dbObject('LockedOutUntil')->InPast()
-        ) {
-            PartialSubmissionController::reloadSession($session, $partial->ID);
-            return false;
-        }
-
-        // Lockout when there's an ongoing session
-        return $phpSessionID !== $partial->PHPSessionID && $partial->dbObject('LockedOutUntil')->InFuture();
     }
 }

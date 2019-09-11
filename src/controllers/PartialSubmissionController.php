@@ -9,6 +9,7 @@ use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 use SilverStripe\Assets\File;
 use SilverStripe\Assets\Upload;
 use SilverStripe\CMS\Controllers\ContentController;
+use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
@@ -73,11 +74,8 @@ class PartialSubmissionController extends ContentController
         $partialSubmission = PartialFormSubmission::get()->byID($submissionID);
 
         if (!$submissionID || !$partialSubmission) {
-            // A new session has already been created in {@link UserDefinedFormControllerExtension::onAfterInit()}
-            // so this shouldn't happen. Although, when there's a pending ajax save (e.g. user clicks next/prev too fast
-            // then hit submit), after submission, the submissionID has already been deleted while save is still in
-            // progress, thus resulting to 404
-            // TODO: Find a solution dealing with race condition between ajax save and form submit
+            // New sessions are created when a user clicks "Start" from the start form
+            // {@link UserDefinedFormControllerExtension::StartForm()}
             $this->httpError(404);
         }
 
@@ -134,6 +132,23 @@ class PartialSubmissionController extends ContentController
 
         $partial->LockedOutUntil = $now->format('Y-m-d H:i:s');
         $partial->PHPSessionID = $phpSessionID;
+        $partial->write();
+    }
+
+    /**
+     * Clear lock session (e.g. when the user navigates to form overview)
+     */
+    public static function clearLockSession()
+    {
+        $partialID = Controller::curr()->getRequest()->getSession()->get(self::SESSION_KEY);
+        $partial = PartialFormSubmission::get()->byID($partialID);
+
+        if (!$partial) {
+            return;
+        }
+
+        $partial->LockedOutUntil = null;
+        $partial->PHPSessionID = null;
         $partial->write();
     }
 

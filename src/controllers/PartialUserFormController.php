@@ -17,6 +17,8 @@ use SilverStripe\Forms\HiddenField;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\UserForms\Control\UserDefinedFormController;
+use SilverStripe\UserForms\Form\UserForm;
+use SilverStripe\View\Requirements;
 
 /**
  * Class PartialUserFormController
@@ -71,6 +73,10 @@ class PartialUserFormController extends UserDefinedFormController
             return $this->redirect($page->link('verify'));
         }
 
+        // Add required javascripts
+        Requirements::javascript('firesphere/partialuserforms:client/dist/main.js');
+
+        /** @var UserForm $form */
         $form = $controller->Form();
         $form->loadDataFrom($partial->getFields());
         $this->populateData($form, $partial);
@@ -89,25 +95,24 @@ class PartialUserFormController extends UserDefinedFormController
 
                 return $controller->customise([
                     'Content'     => DBField::create_field('HTMLText', $content),
-                    'Form'        => '',
-                    'PartialLink' => $partial->getPartialLink()
-                ])->renderWith([static::class, Page::class]);
+                    'Form'        => ''
+                ]);
             }
         }
 
         return $controller->customise([
             'Content'     => DBField::create_field('HTMLText', $controller->Content),
-            'Form'        => $form,
-            'PartialLink' => $partial->getPartialLink()
-        ])->renderWith([static::class, Page::class]);
+            'Form'        => $form
+        ]);
     }
+
 
     /**
      * A little abstraction to be more readable
-     *
      * @param HTTPRequest $request
      * @return PartialFormSubmission|void
      * @throws HTTPResponse_Exception
+     * @throws \SilverStripe\ORM\ValidationException
      */
     public function validateToken($request)
     {

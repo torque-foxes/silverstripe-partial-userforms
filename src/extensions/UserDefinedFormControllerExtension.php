@@ -45,14 +45,6 @@ class UserDefinedFormControllerExtension extends Extension
     ];
 
     /**
-     * Add required javascripts
-     */
-    public function onBeforeInit()
-    {
-        Requirements::javascript('firesphere/partialuserforms:client/dist/main.js');
-    }
-
-    /**
      * Creates a new partial submission and partial fields.
      *
      * @throws \SilverStripe\ORM\ValidationException
@@ -187,6 +179,16 @@ class UserDefinedFormControllerExtension extends Extension
 
         // Else create new partial submission before redirecting
         $this->createPartialSubmission();
+        return $this->owner->redirect($this->owner->Link('overview'));
+    }
+
+    /**
+     * Redirect to overview page without creating a new PartialFormSubmission. This action will
+     * clear the lock session to allow other users to fill out the form after sharing.
+     */
+    public function goToShareView()
+    {
+        PartialSubmissionController::clearLockSession();
         return $this->owner->redirect($this->owner->Link('overview'));
     }
 

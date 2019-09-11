@@ -1,9 +1,10 @@
 const baseDomain = document.baseURI;
 const submitURL = 'partialuserform/save';
 const form = document.body.querySelector('form.userform');
-const buttons = () => Array.from(form.querySelectorAll('ul li.step-button-wrapper button'));
-// Just get the form elements from the current step
-const formElements = () => Array.from(form.querySelectorAll('[aria-hidden=false] [name]:not([type=hidden]):not([type=submit])'));
+const formElements = () => Array.from(form.querySelectorAll('[name]:not([type=hidden]):not([type=submit])'));
+const saveButton = form.querySelector('button.step-button-save');
+const shareButton = form.querySelector('button.step-button-share');
+const submitButton = form.querySelector('[type=submit]');
 const requests = [];
 
 const getElementValue = (element, fieldName) => {
@@ -64,10 +65,27 @@ const submitPartial = () => {
   requests.push(httpRequest);
   httpRequest.open('POST', `${baseDomain}${submitURL}`, true);
   httpRequest.send(data);
+  httpRequest.upload.loadstart = () => {
+    saveButton.disabled = true;
+    submitButton.disabled = true;
+  };
+  httpRequest.onload = () => {
+    saveButton.disabled = false;
+    submitButton.disabled = false;
+  };
+  httpRequest.onerror = () => {
+
+  };
 };
 
-const attachSubmitPartial = (button) => {
-  button.addEventListener('click', submitPartial);
+const attachSavePartial = () => {
+  saveButton.addEventListener('click', submitPartial);
+};
+
+const attachShareForm = () => {
+  shareButton.addEventListener('click', () => {
+
+  });
 };
 
 const abortPendingSubmissions = () => {
@@ -87,6 +105,7 @@ const abortPendingSubmissions = () => {
 };
 
 export default function () {
-  buttons().forEach(attachSubmitPartial);
+  attachSavePartial();
+  attachShareForm();
   abortPendingSubmissions();
 }

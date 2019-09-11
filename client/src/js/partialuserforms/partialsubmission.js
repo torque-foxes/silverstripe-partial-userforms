@@ -3,7 +3,6 @@ const submitURL = 'partialuserform/save';
 const form = document.body.querySelector('form.userform');
 const formElements = () => Array.from(form.querySelectorAll('[name]:not([type=hidden]):not([type=submit])'));
 const saveButton = form.querySelector('button.step-button-save');
-const shareButton = form.querySelector('button.step-button-share');
 const submitButton = form.querySelector('[type=submit]');
 const requests = [];
 
@@ -65,27 +64,24 @@ const submitPartial = () => {
   requests.push(httpRequest);
   httpRequest.open('POST', `${baseDomain}${submitURL}`, true);
   httpRequest.send(data);
-  httpRequest.upload.loadstart = () => {
-    saveButton.disabled = true;
-    submitButton.disabled = true;
-  };
-  httpRequest.onload = () => {
-    saveButton.disabled = false;
-    submitButton.disabled = false;
-  };
-  httpRequest.onerror = () => {
 
+  httpRequest.onreadystatechange = () => {
+    if (httpRequest.readyState === 1) {
+      saveButton.disabled = true;
+      submitButton.disabled = true;
+    } else if (httpRequest.readyState === 4) {
+      saveButton.disabled = false;
+      submitButton.disabled = false;
+
+      if (httpRequest.status === 409) {
+        alert(httpRequest.responseText);
+      }
+    }
   };
 };
 
 const attachSavePartial = () => {
   saveButton.addEventListener('click', submitPartial);
-};
-
-const attachShareForm = () => {
-  shareButton.addEventListener('click', () => {
-
-  });
 };
 
 const abortPendingSubmissions = () => {
@@ -106,6 +102,5 @@ const abortPendingSubmissions = () => {
 
 export default function () {
   attachSavePartial();
-  attachShareForm();
   abortPendingSubmissions();
 }

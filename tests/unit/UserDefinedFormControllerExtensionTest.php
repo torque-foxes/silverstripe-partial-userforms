@@ -45,7 +45,7 @@ class UserDefinedFormControllerExtensionTest extends FunctionalTest
 
         $response = $this->get('form-1');
         $this->assertEquals(200, $response->getStatusCode());
-        $this->assertContains('Start', $response->getBody());
+        $this->assertContains('form-1/StartForm', $response->getBody());
     }
 
     /**
@@ -186,7 +186,6 @@ class UserDefinedFormControllerExtensionTest extends FunctionalTest
     {
         parent::setUp();
         $this->objFromFixture(UserDefinedForm::class, 'form1')->publishRecursive();
-
     }
 
     public function tearDown()

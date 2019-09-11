@@ -61,23 +61,24 @@ const submitPartial = () => {
 
   /** global: XMLHttpRequest */
   const httpRequest = new XMLHttpRequest();
-  requests.push(httpRequest);
-  httpRequest.open('POST', `${baseDomain}${submitURL}`, true);
-  httpRequest.send(data);
-
   httpRequest.onreadystatechange = () => {
     if (httpRequest.readyState === 1) {
-      saveButton.disabled = true;
-      submitButton.disabled = true;
+      saveButton.setAttribute('disabled', 'disabled');
+      submitButton.setAttribute('disabled', 'disabled');
     } else if (httpRequest.readyState === 4) {
-      saveButton.disabled = false;
-      submitButton.disabled = false;
+      saveButton.removeAttribute('disabled');
+      submitButton.removeAttribute('disabled');
+      form.classList.remove('dirty');
 
       if (httpRequest.status === 409) {
         alert(httpRequest.responseText);
       }
     }
   };
+
+  requests.push(httpRequest);
+  httpRequest.open('POST', `${baseDomain}${submitURL}`, true);
+  httpRequest.send(data);
 };
 
 const attachSavePartial = () => {

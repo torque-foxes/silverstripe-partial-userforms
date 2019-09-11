@@ -189,7 +189,7 @@ class UserDefinedFormControllerExtension extends Extension
         return $this->owner->redirect($this->owner->Link('overview'));
     }
 
-     /**
+    /**
      * Overview route
      */
     public function overview(HTTPRequest $request = null)
@@ -222,12 +222,11 @@ class UserDefinedFormControllerExtension extends Extension
     {
         $partialID = $request->getSession()->get(PartialSubmissionController::SESSION_KEY);
         $password = $request->getSession()->get(PartialUserFormVerifyController::PASSWORD_KEY);
+        $submission = PartialFormSubmission::get()->byID($partialID);
 
-        if (!$partialID) {
+        if (!$partialID || !$submission) {
             return $this->owner->redirect($this->owner->Link('start'));
         }
-
-        $submission = PartialFormSubmission::get()->byID($partialID);
 
         $fields = FieldList::create(
             TextField::create('FormLink', 'Form link', $submission->getPartialLink())

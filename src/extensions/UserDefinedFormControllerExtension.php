@@ -8,7 +8,6 @@ use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\FormAction;
-use SilverStripe\View\Requirements;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
@@ -38,6 +37,7 @@ class UserDefinedFormControllerExtension extends Extension
         'OverviewForm',
         'verify',
         'VerifyForm',
+        'share',
     ];
 
     private static $url_handlers = [
@@ -182,17 +182,7 @@ class UserDefinedFormControllerExtension extends Extension
         return $this->owner->redirect($this->owner->Link('overview'));
     }
 
-    /**
-     * Redirect to overview page without creating a new PartialFormSubmission. This action will
-     * clear the lock session to allow other users to fill out the form after sharing.
-     */
-    public function goToShareView()
-    {
-        PartialSubmissionController::clearLockSession();
-        return $this->owner->redirect($this->owner->Link('overview'));
-    }
-
-    /**
+     /**
      * Overview route
      */
     public function overview(HTTPRequest $request = null)
@@ -208,6 +198,18 @@ class UserDefinedFormControllerExtension extends Extension
             'FormLocked' => $formLocked,
             'PartialForm' => $this->getPartialFormSubmission(),
         ]);
+    }
+
+    /**
+     * Clear the lock session to allow other users to fill out the form after sharing and render overview page.
+     */
+    public function share(HTTPRequest $request = null)
+    {
+        PartialSubmissionController::clearLockSession();
+
+        return $this->owner->customise([
+            'Form' => $this->OverviewForm($request)
+        ])->renderWith([UserDefinedFormController::class . '_overview', Page::class]);
     }
 
     /**

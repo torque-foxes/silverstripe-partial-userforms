@@ -6,7 +6,7 @@
         --%>
         <li class="step-button-wrapper" aria-hidden="true" style="display:none;">
             <button class="step-button-prev">
-                <%t SilverStripe\\UserForms\\Model\\EditableFormField\\EditableFormStep.STEP_PREVIOUS "Previous" %>
+                <%t SilverStripe\\UserForms\\Model\\EditableFormField\\EditableFormStep.STEP_PREV "Prev" %>
             </button>
         </li>
         <% if $Controller.EnablePartialSubmissions %>
@@ -16,7 +16,7 @@
                 </button>
             </li>
             <li class="step-button-wrapper">
-                <a href="{$Controller.Link}overview" class="step-button-share">
+                <a href="{$Controller.Link}share" class="step-button-share">
                     <%t Firesphere\\PartialUserforms\\Form.STEP_SHARE "Share form" %>
                 </a>
             </li>

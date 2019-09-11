@@ -203,7 +203,8 @@ class UserDefinedFormControllerExtension extends Extension
 
         return $this->owner->customise([
             'Form' => $form,
-            'FormLocked' => $formLocked
+            'FormLocked' => $formLocked,
+            'PartialForm' => $this->getPartialFormSubmission(),
         ]);
     }
 
@@ -223,7 +224,7 @@ class UserDefinedFormControllerExtension extends Extension
         $submission = PartialFormSubmission::get()->byID($partialID);
 
         $fields = FieldList::create(
-            TextField::create('FormLink', 'FormLink', $submission->getPartialLink())
+            TextField::create('FormLink', 'Form link', $submission->getPartialLink())
                 ->setReadonly(true)
         );
 

@@ -8,7 +8,6 @@ use SilverStripe\Core\Extension;
 use SilverStripe\Forms\FieldList;
 use SilverStripe\Forms\TextField;
 use SilverStripe\Forms\FormAction;
-use SilverStripe\View\Requirements;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
@@ -43,14 +42,6 @@ class UserDefinedFormControllerExtension extends Extension
     private static $url_handlers = [
         '' => 'partialIndex',
     ];
-
-    /**
-     * Add required javascripts
-     */
-    public function onBeforeInit()
-    {
-        Requirements::javascript('firesphere/partialuserforms:client/dist/main.js');
-    }
 
     /**
      * Creates a new partial submission and partial fields.
@@ -122,8 +113,12 @@ class UserDefinedFormControllerExtension extends Extension
     /**
      * Verify route, for password entry
      */
-    public function verify()
+    public function verify(HTTPRequest $request = null)
     {
+        if (!$this->owner->EnablePartialSubmissions) {
+            return $this->owner->redirect($this->owner->Link());
+        }
+
         return $this->owner->customise([
             'Form' => $this->VerifyForm(),
         ])->renderWith([UserDefinedFormController::class . '_start', Page::class]);
@@ -148,6 +143,10 @@ class UserDefinedFormControllerExtension extends Extension
      */
     public function start(HTTPRequest $request = null)
     {
+        if (!$this->owner->EnablePartialSubmissions) {
+            return $this->owner->redirect($this->owner->Link());
+        }
+
         return $this->owner->customise([
             'Form' => $this->StartForm(),
         ]);
@@ -178,14 +177,7 @@ class UserDefinedFormControllerExtension extends Extension
      */
     public function goToOverview($data, $form)
     {
-        // If partial submission which matches this form already exists, redirect to overview
-        $submission = $this->getPartialFormSubmission();
-
-        if ($submission && $submission->ParentID === $this->owner->ID) {
-            return $this->owner->redirect($this->owner->Link('overview'));
-        }
-
-        // Else create new partial submission before redirecting
+        // Create a new session each time a user starts the form
         $this->createPartialSubmission();
         return $this->owner->redirect($this->owner->Link('overview'));
     }
@@ -195,10 +187,17 @@ class UserDefinedFormControllerExtension extends Extension
      */
     public function overview(HTTPRequest $request = null)
     {
+        if (!$this->owner->EnablePartialSubmissions) {
+            return $this->owner->redirect($this->owner->Link());
+        }
+
         $formLocked = PartialUserFormController::isLockedOut();
         $form = $this->OverviewForm($request);
         if ($formLocked) {
             $form->unsetAllActions();
+        } else {
+            // Clear session if it's not locked (e.g. session belongs to the user)
+            PartialSubmissionController::clearLockSession();
         }
 
         return $this->owner->customise([
@@ -216,12 +215,11 @@ class UserDefinedFormControllerExtension extends Extension
     {
         $partialID = $request->getSession()->get(PartialSubmissionController::SESSION_KEY);
         $password = $request->getSession()->get(PartialUserFormVerifyController::PASSWORD_KEY);
+        $submission = PartialFormSubmission::get()->byID($partialID);
 
-        if (!$partialID) {
+        if (!$partialID || !$submission) {
             return $this->owner->redirect($this->owner->Link('start'));
         }
-
-        $submission = PartialFormSubmission::get()->byID($partialID);
 
         $fields = FieldList::create(
             TextField::create('FormLink', 'Form link', $submission->getPartialLink())

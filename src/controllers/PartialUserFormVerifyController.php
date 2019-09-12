@@ -3,14 +3,10 @@
 
 namespace Firesphere\PartialUserforms\Controllers;
 
-use Page;
 use Exception;
 use PageController;
-use SilverStripe\Control\Director;
-use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Control\HTTPResponse_Exception;
-use SilverStripe\UserForms\Model\UserDefinedForm;
 use Firesphere\PartialUserforms\Forms\PasswordForm;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
 

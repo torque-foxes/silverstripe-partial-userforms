@@ -87,6 +87,7 @@ class PartialUserFormControllerTest extends FunctionalTest
         $submission = $this->objFromFixture(PartialFormSubmission::class, 'submission1');
         /** @var UserDefinedForm $parent */
         $parent = $submission->Parent();
+        $parent->EnablePartialSubmissions = true;
         $parent->PasswordProtected = true;
         $parent->write();
         $parent->publishRecursive();
@@ -101,10 +102,14 @@ class PartialUserFormControllerTest extends FunctionalTest
     public function testIsLockedOut()
     {
         $partial = $this->objFromFixture(PartialFormSubmission::class, 'submission1');
+        $page = $partial->Parent();
+        $page->EnablePartialSubmissions = true;
+        $page->write();
+        $page->publishRecursive();
         $this->session()->set(PartialSubmissionController::SESSION_KEY, $partial->ID);
 
         // No session recorded = not locked
-        $response = $this->get($partial->parent()->Link('overview'));
+        $response = $this->get($page->Link('overview'));
         $this->assertNull($partial->LockedOutUntil);
         $this->assertNull($partial->PHPSessionID);
         $this->assertNotContains('This form is currently being used by someone else', $response->getBody());
@@ -116,12 +121,8 @@ class PartialUserFormControllerTest extends FunctionalTest
         $partial->PHPSessionID = 'white';
         $partial->write();
 
-        $response = $this->get($partial->parent()->Link('overview'));
+        $response = $this->get($page->Link('overview'));
         $this->assertNotContains('This form is currently being used by someone else', $response->getBody());
-        // -- Check for updated record
-        $updatedPartial = PartialFormSubmission::get()->byID($partial->ID);
-        $this->assertEquals('2019-02-15 11:30:00', $updatedPartial->LockedOutUntil);
-        $this->assertEquals('white', $updatedPartial->PHPSessionID);
 
         // Session in the past + different user = Not Locked
         DBDatetime::set_mock_now('2019-02-15 11:00:00');
@@ -131,12 +132,8 @@ class PartialUserFormControllerTest extends FunctionalTest
         $partial->PHPSessionID = 'white';
         $partial->write();
 
-        $response = $this->get($partial->parent()->Link('overview'));
+        $response = $this->get($page->Link('overview'));
         $this->assertNotContains('This form is currently being used by someone else', $response->getBody());
-        // -- Check for updated record
-        $updatedPartial = PartialFormSubmission::get()->byID($partial->ID);
-        $this->assertEquals('2019-02-15 11:30:00', $updatedPartial->LockedOutUntil);
-        $this->assertEquals('red', $updatedPartial->PHPSessionID);
 
         // Session within 30mins + same user = Not Locked
         DBDatetime::set_mock_now('2019-02-15 12:00:00');
@@ -146,12 +143,8 @@ class PartialUserFormControllerTest extends FunctionalTest
         $partial->PHPSessionID = 'blue';
         $partial->write();
 
-        $response = $this->get($partial->parent()->Link('overview'));
+        $response = $this->get($page->Link('overview'));
         $this->assertNotContains('This form is currently being used by someone else', $response->getBody());
-        // -- Check for updated record
-        $updatedPartial = PartialFormSubmission::get()->byID($partial->ID);
-        $this->assertEquals('2019-02-15 12:30:00', $updatedPartial->LockedOutUntil);
-        $this->assertEquals('blue', $updatedPartial->PHPSessionID);
 
         // Session within 30mins + different user = Locked
         DBDatetime::set_mock_now('2019-02-15 12:00:00');
@@ -161,15 +154,14 @@ class PartialUserFormControllerTest extends FunctionalTest
         $partial->PHPSessionID = 'white';
         $partial->write();
 
-        $response = $this->get($partial->parent()->Link('overview'));
+        $response = $this->get($page->Link('overview'));
         $this->assertContains('This form is currently being used by someone else', $response->getBody());
-        // -- Check for unchanged record
-        $updatedPartial = PartialFormSubmission::get()->byID($partial->ID);
-        $this->assertEquals('2019-02-15 12:15:00', $updatedPartial->LockedOutUntil);
-        $this->assertEquals('white', $updatedPartial->PHPSessionID);
+    }
 
-        // Set the session back to empty string to prevent destroying uninitialized session
-        session_id('');
+    public function testRequirements()
+    {
+        $response = $this->get("partial/2f27a563575293c8/q1w2e3r4t5y6u7i8");
+        $this->assertContains('/client/dist/main.js', $response->getBody());
     }
 
     public function setUp()
@@ -177,5 +169,14 @@ class PartialUserFormControllerTest extends FunctionalTest
         parent::setUp();
         $this->objFromFixture(UserDefinedForm::class, 'form1')->publishRecursive();
         $this->objFromFixture(File::class, 'file1')->publishRecursive();
+    }
+
+    public function tearDown()
+    {
+        if (session_id()) {
+            // Set the session back to empty string to prevent destroying uninitialized session
+            session_id('');
+        }
+        parent::tearDown();
     }
 }

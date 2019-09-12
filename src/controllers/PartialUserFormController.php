@@ -4,7 +4,6 @@ namespace Firesphere\PartialUserforms\Controllers;
 
 use Exception;
 use Firesphere\PartialUserforms\Models\PartialFormSubmission;
-use Page;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use Firesphere\PartialUserforms\Forms\PasswordForm;
@@ -17,6 +16,8 @@ use SilverStripe\Forms\HiddenField;
 use SilverStripe\ORM\FieldType\DBField;
 use SilverStripe\ORM\FieldType\DBHTMLText;
 use SilverStripe\UserForms\Control\UserDefinedFormController;
+use SilverStripe\UserForms\Form\UserForm;
+use SilverStripe\View\Requirements;
 
 /**
  * Class PartialUserFormController
@@ -56,6 +57,9 @@ class PartialUserFormController extends UserDefinedFormController
         // Check if form is locked
         if (static::isLockedOut()) {
             $this->redirect($page->link('overview'));
+        } else {
+            // Claim the form session
+            PartialSubmissionController::reloadSession($request->getSession(), $partial->ID);
         }
 
         /** @var self $controller */
@@ -71,6 +75,10 @@ class PartialUserFormController extends UserDefinedFormController
             return $this->redirect($page->link('verify'));
         }
 
+        // Add required javascripts
+        Requirements::javascript('firesphere/partialuserforms:client/dist/main.js');
+
+        /** @var UserForm $form */
         $form = $controller->Form();
         $form->loadDataFrom($partial->getFields());
         $this->populateData($form, $partial);
@@ -89,25 +97,24 @@ class PartialUserFormController extends UserDefinedFormController
 
                 return $controller->customise([
                     'Content'     => DBField::create_field('HTMLText', $content),
-                    'Form'        => '',
-                    'PartialLink' => $partial->getPartialLink()
-                ])->renderWith([static::class, Page::class]);
+                    'Form'        => ''
+                ]);
             }
         }
 
         return $controller->customise([
             'Content'     => DBField::create_field('HTMLText', $controller->Content),
-            'Form'        => $form,
-            'PartialLink' => $partial->getPartialLink()
-        ])->renderWith([static::class, Page::class]);
+            'Form'        => $form
+        ]);
     }
+
 
     /**
      * A little abstraction to be more readable
-     *
      * @param HTTPRequest $request
      * @return PartialFormSubmission|void
      * @throws HTTPResponse_Exception
+     * @throws \SilverStripe\ORM\ValidationException
      */
     public function validateToken($request)
     {
@@ -139,7 +146,6 @@ class PartialUserFormController extends UserDefinedFormController
     /**
      * Checks whether this form is currently being used by someone else
      * @return bool
-     * @throws \SilverStripe\ORM\ValidationException
      */
     public static function isLockedOut()
     {
@@ -156,7 +162,6 @@ class PartialUserFormController extends UserDefinedFormController
             $phpSessionID === $partial->PHPSessionID ||
             $partial->dbObject('LockedOutUntil')->InPast()
         ) {
-            PartialSubmissionController::reloadSession($session, $partial->ID);
             return false;
         }
 

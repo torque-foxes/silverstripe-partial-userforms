@@ -177,14 +177,7 @@ class UserDefinedFormControllerExtension extends Extension
      */
     public function goToOverview($data, $form)
     {
-        // If partial submission which matches this form already exists, redirect to overview
-        $submission = $this->getPartialFormSubmission();
-
-        if ($submission && $submission->ParentID === $this->owner->ID) {
-            return $this->owner->redirect($this->owner->Link('overview'));
-        }
-
-        // Else create new partial submission before redirecting
+        // Create a new session each time a user starts the form
         $this->createPartialSubmission();
         return $this->owner->redirect($this->owner->Link('overview'));
     }

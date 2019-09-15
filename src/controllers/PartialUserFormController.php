@@ -56,7 +56,7 @@ class PartialUserFormController extends UserDefinedFormController
 
         // Check if form is locked
         if (static::isLockedOut()) {
-            $this->redirect($page->link('overview'));
+            return $this->redirect($page->link('overview'));
         } else {
             // Claim the form session
             PartialSubmissionController::reloadSession($request->getSession(), $partial->ID);
